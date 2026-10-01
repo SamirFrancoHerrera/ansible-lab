@@ -1,0 +1,13 @@
+#ignore kubeconfig
+*.kubeconfig
+kubeconfig
+.kube/config
+
+#ignore all files of vault
+*.vault_pass
+*.vault_pass*
+vault_password*
+
+#ignore all files of ansible
+*.retry
+*.log
