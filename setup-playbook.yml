@@ -1,0 +1,5 @@
+---
+- name: Example ansible playbook
+  hosts: all
+  roles:
+    - python
