@@ -1,0 +1,10 @@
+---
+profile: production
+
+exclude_paths:
+  - .ansible/
+  - .cache/
+  - .git/
+
+warn_list:
+  - name[template]

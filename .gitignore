@@ -11,3 +11,5 @@ vault_password*
 #ignore all files of ansible
 *.retry
 *.log
+
+.ansible/

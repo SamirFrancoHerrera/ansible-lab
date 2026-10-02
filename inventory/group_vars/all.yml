@@ -1,0 +1,8 @@
+---
+timezone: America/Bogota
+base_packages:
+  - git
+  - curl
+  - wget
+  - vim
+
