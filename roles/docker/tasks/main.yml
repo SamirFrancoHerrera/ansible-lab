@@ -65,6 +65,18 @@
     groups: docker
     append: true
 
+- name: Create directory for web content
+  ansible.builtin.file:
+    path: '{{ docker_content_dir }}'
+    state: directory
+    mode: '0755'
+
+- name: Render custom page
+  ansible.builtin.template:
+    src: index.html.j2
+    dest: '{{ docker_content_dir }}/index.html'
+    mode: '0644'
+
 - name: Render docker-compose file
   ansible.builtin.template:
     src: docker-compose.yml.j2

@@ -6,6 +6,8 @@ docker_nginx_config:
     tag: "1.27-alpine"
     ports:
       - "8080:80"
+  page_title: 'Ansible Lab'
 
 docker_compose_dir: /opt/web
+docker_content_dir: "{{ docker_compose_dir }}/html"
 docker_keyrings_dir: /etc/apt/keyrings

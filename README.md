@@ -46,10 +46,11 @@ ansible-lab/
     └── docker/                    # Docker Engine + nginx en contenedor
         ├── defaults/main.yml      #   variables sobreescribibles
         ├── vars/main.yml          #   URLs y listas internas del rol
-        ├── tasks/main.yml         #   14 tareas: repo → paquete → deploy
+        ├── tasks/main.yml         #   16 tareas: repo → paquete → deploy
         ├── meta/main.yml          #   metadata del rol
         └── templates/
-            └── docker-compose.yml.j2
+            ├── docker-compose.yml.j2
+            └── index.html.j2      #   página servida por nginx
 ```
 
 | Ruta | Responsabilidad |
@@ -108,13 +109,21 @@ ansible all -m ping
 # 4. Desplegar el stack de contenedores
 ansible-playbook playbooks/site.yml --tags docker
 
-# 5. Comprobar que nginx responde en ambos nodos
-curl http://192.168.56.3:8080
-curl http://192.168.56.4:8080
+# 5. Comprobar que nginx sirve la página custom en ambos nodos
+curl http://192.168.56.3:8080    # debe mostrar "Nodo: node1"
+curl http://192.168.56.4:8080    # debe mostrar "Nodo: node2"
 ```
 
 Desde la raíz del repositorio: `ansible.cfg` solo se lee si el playbook se ejecuta
 desde allí, o si se define `ANSIBLE_CONFIG`.
+
+**Verificar el tipo de archivo montado.** Un bind mount falla de forma confusa si
+el path del host existe como directorio en vez de archivo:
+
+```bash
+ansible node1 -m command -a "stat -c '%F' /opt/web/html/index.html"
+# esperado: regular file
+```
 
 ## Validación
 
@@ -135,16 +144,22 @@ segunda ejecución. Es la prueba de que la automatización es predecible. Estado
 actual del tag `docker`:
 
 ```text
-192.168.56.3 : ok=14  changed=0  unreachable=0  failed=0
-192.168.56.4 : ok=14  changed=0  unreachable=0  failed=0
+node1 : ok=16  changed=0  unreachable=0  failed=0
+node2 : ok=16  changed=0  unreachable=0  failed=0
 ```
 
 El primer despliegue sí produce `changed`, porque el repositorio de Docker todavía
 no existía en los nodos.
 
+**`changed=0` no significa "todo bien".** Durante el desarrollo de la página custom,
+varias ejecuciones dieron `ok=14 changed=0` mientras el sitio estaba caído: la tarea
+de render reportaba éxito sobre un directorio en vez de un archivo. Un `PLAY RECAP`
+verde no reemplaza un `curl` que pruebe el resultado.
+
 ## Variables
 
-`inventory/group_vars/all.yml` define lo común a ambos nodos:
+Las variables del rol viven en sus `defaults/`; `inventory/group_vars/all.yml` está
+preparado para lo común a ambos nodos y hoy solo aporta `timezone`.
 
 | Variable | Tipo | Ubicación | Propósito |
 |---|---|---|---|
@@ -152,18 +167,32 @@ no existía en los nodos.
 | `docker_nginx_config.image.name` | string | `defaults/` | Nombre de la imagen |
 | `docker_nginx_config.image.tag` | string | `defaults/` | Tag de la imagen |
 | `docker_nginx_config.image.ports` | list | `defaults/` | Mapeos de puertos del contenedor |
+| `docker_nginx_config.page_title` | string | `defaults/` | Título de la página custom |
 | `docker_compose_dir` | string | `defaults/` | Directorio del proyecto compose |
+| `docker_content_dir` | string | `defaults/` | Directorio del contenido web montado |
 | `docker_packages` | list | `vars/` | Paquetes a instalar |
 | `docker_gpg_url` | string | `vars/` | URL de la GPG key oficial |
 
 Criterio: **un solo valor → escalar; varios datos que viajan juntos → `list` o
-`dict`.** Un diccionario para un valor aislado es sobre-ingeniería.
+`dict`.** Un diccionario para un valor aislado es sobre-ingeniería. `port`,
+`page_title` e `image` viajan juntos porque describen el mismo servicio, así que
+un solo `dict` es coherente; `docker_compose_dir` y `docker_content_dir` viven
+sueltos porque son rutas de la plataforma, no del servicio.
 
-`inventory/group_vars/all.yml` está preparado para variables comunes a todos los
-hosts, aunque en este momento solo contenga `timezone`: el resto de la
-configuración es específica del rol `docker` y por eso vive en sus `defaults/`.
-Basta con agregar ahí cualquier variable compartida por todos los nodos, como
-los paquetes base del sistema.
+**Contenido montado como directorio.** El compose monta `./html` sobre
+`/usr/share/nginx/html`, no un archivo suelto:
+
+```yaml
+volumes:
+  - ./html:/usr/share/nginx/html:ro
+```
+
+Montar el directorio —y no `./html/index.html`— es obligatorio. `template` escribe
+en un archivo temporal y hace `rename` al final, lo que crea un **inode nuevo**.
+Un bind mount de un archivo captura el **inode** al montarse, no la ruta, así que
+reemplazar el archivo deja al contenedor leyendo el contenido viejo indefinidamente.
+Montando el directorio, el inode del directorio no cambia y nginx sí ve el archivo
+nuevo.
 
 **Precedencia.** Las variables del rol viven en dos capas: `defaults/main.yml`
 puede ser sobreescrito por `group_vars/`, por variables del play o por
@@ -226,13 +255,34 @@ y el último en cargarse ganaría.
 - **Los números que parecen número van entre comillas en YAML.** `version: 5.2.2`
   sin comillas se interpreta como float. Aplica igual a `min_ansible_version` o a
   los tags de imagen.
+- **`force: true` no arregla un `dest` que es un directorio.** Con `dest` apuntando
+  a un directorio, el módulo `template` hace early-return y reporta `ok` sin
+  escribir nada; con `force` no lo reemplaza, lo interpreta como directorio destino
+  y deposita el archivo fuente **dentro** (`index.html/index.html.j2`). El módulo
+  nunca borra el path. La solución es eliminar el directorio.
+- **Un bind mount de un archivo queda obsoleto cuando `template` lo reemplaza.**
+  `template` escribe en un temporal y hace `rename`, lo que genera un inode nuevo.
+  El bind mount retiene el inode original, así que el contenedor sigue sirviendo el
+  contenido viejo para siempre. Montar el **directorio** evita el problema porque
+  su inode no cambia.
+- **`inventory_hostname` es el nombre del inventario, no la IP.** Si el inventario
+  declara `192.168.56.3 ansible_user=node1`, entonces `inventory_hostname` vale
+  `192.168.56.3` y `ansible_user` vale `node1`: son cosas distintas. Declarar
+  `node1 ansible_host=192.168.56.3 ansible_user=node1` hace que cada variable
+  responda a su pregunta natural.
+- **Un grupo y un host no pueden llamarse igual.** `[node1]` con un host `node1`
+  produce `Found both group and host with same name`. Se usó un grupo `lab` que
+  contiene a los dos hosts.
+- **`changed=0` no prueba que el sistema esté sano.** `ok=14 changed=0 failed=1` es
+  un `PLAY RECAP` que parece verde mientras el servicio está caído. El resumen mide
+  cambios declarados por Ansible, no el estado real del sistema.
 
 ## Roadmap
 
 | Fase | Contenido | Estado |
 |---|---|---|
 | 0 | Estructura, inventario, lint, variables | Completada |
-| 1 | Docker Engine + nginx en contenedor con Jinja2 | Completada |
+| 1 | Docker Engine + nginx con página custom en Jinja2 | Completada |
 | 2 | Ansible Vault para secretos | Pendiente |
 | 3 | Active-passive con nginx + keepalived | Pendiente |
 | 4 | Clúster k3s (server + agent) | Pendiente |

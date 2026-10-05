@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>{{ docker_nginx_config.page_title }}</title>
+</head>
+<body>
+  <h1>{{ docker_nginx_config.page_title }}</h1>
+  <p>Nodo: {{ inventory_hostname }}</p>
+  <p>IP: {{ ansible_host }}</p>
+  <p>OS: {{ ansible_facts['distribution'] }} {{ ansible_facts['distribution_version'] }}</p>
+</body>
+</html>
