@@ -1,0 +1,80 @@
+---
+- name: Update apt cache
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Create directory for docker-compose
+  ansible.builtin.file:
+    path: "{{ docker_compose_dir }}"
+    state: directory
+    mode: '0755'
+
+- name: Install prerequisites for docker installation
+  ansible.builtin.apt:
+    name:
+      '{{ docker_prerequisites }}'
+    state: present
+
+- name: Create docker GPG key directory
+  ansible.builtin.file:
+    path: '{{ docker_keyrings_dir }}'
+    state: directory
+    mode: '0755'
+
+- name: Download Docker's official GPG key
+  ansible.builtin.get_url:
+    url: '{{ docker_gpg_url }}'
+    dest: '{{ docker_keyrings_dir }}/docker.asc'
+    mode: "0644"
+
+- name: Get architecture
+  ansible.builtin.command: dpkg --print-architecture
+  register: docker_architecture
+  changed_when: false
+
+- name: Add Docker repository to APT sources
+  ansible.builtin.deb822_repository:
+    name: docker
+    types: deb
+    uris: '{{ docker_repo_url }}'
+    suites: '{{ ansible_facts["distribution_release"] }}'
+    components: stable
+    architectures: '{{ docker_architecture.stdout }}'
+    signed_by: '{{ docker_keyrings_dir }}/docker.asc'
+
+- name: Update apt cache after adding Docker repository
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Install Docker and Docker Compose
+  ansible.builtin.package:
+    name: '{{ docker_packages }}'
+    state: present
+
+- name: Ensure Docker service is enabled and started
+  ansible.builtin.service:
+    name: docker
+    state: started
+    enabled: true
+
+- name: Add ansible user to docker group
+  ansible.builtin.user:
+    name: '{{ ansible_user }}'
+    groups: docker
+    append: true
+
+- name: Render docker-compose file
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: '{{ docker_compose_dir }}/docker-compose.yml'
+    mode: '0644'
+
+- name: Deploy docker stack
+  community.docker.docker_compose_v2:
+    project_src: '{{ docker_compose_dir }}'
+    files:
+      - docker-compose.yml
+    state: present
+    pull: missing

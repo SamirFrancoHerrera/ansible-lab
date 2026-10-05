@@ -1,10 +1,11 @@
 ---
-nginx_config:
+docker_nginx_config:
   port: 8080
   image:
     name: nginx
     tag: "1.27-alpine"
     ports:
       - "8080:80"
-    
+
 docker_compose_dir: /opt/web
+docker_keyrings_dir: /etc/apt/keyrings

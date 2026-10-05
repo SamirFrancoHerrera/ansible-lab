@@ -1,0 +1,6 @@
+---
+services:
+  web:
+    image: '{{ docker_nginx_config.image.name }}:{{ docker_nginx_config.image.tag }}'
+    ports: 
+      - '{{ docker_nginx_config.port }}:80'

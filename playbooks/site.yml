@@ -1,5 +1,7 @@
 ---
-- name: Example ansible playbook
+- name: Install and deploy docker and nginx
   hosts: all
+  tags: [docker]
+  become: true
   roles:
-    - python
+    - docker
