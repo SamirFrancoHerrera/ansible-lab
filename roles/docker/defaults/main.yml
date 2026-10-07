@@ -11,3 +11,6 @@ docker_nginx_config:
 docker_compose_dir: /opt/web
 docker_content_dir: "{{ docker_compose_dir }}/html"
 docker_keyrings_dir: /etc/apt/keyrings
+docker_conf_dir: "{{ docker_compose_dir }}/conf.d"
+docker_creds_dir: "{{ docker_compose_dir }}/creds"
+docker_basic_auth_user: "admin"

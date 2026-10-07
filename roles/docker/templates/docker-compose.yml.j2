@@ -6,3 +6,5 @@ services:
       - '{{ docker_nginx_config.port }}:80'
     volumes:
       - ./html:/usr/share/nginx/html:ro
+      - ./conf.d:/etc/nginx/conf.d:ro
+      - ./creds:/etc/nginx/creds:ro

@@ -1,0 +1,6 @@
+---
+- name: Reload nginx
+  community.docker.docker_compose_v2_exec:
+    project_src: '{{ docker_compose_dir }}'
+    service: web
+    command: nginx -s reload

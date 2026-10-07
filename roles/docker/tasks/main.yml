@@ -71,11 +71,40 @@
     state: directory
     mode: '0755'
 
+- name: Create directory for nginx config
+  ansible.builtin.file:
+    path: '{{ docker_conf_dir }}'
+    state: directory
+    mode: '0755'
+
+- name: Create directory for credentials
+  ansible.builtin.file:
+    path: '{{ docker_creds_dir }}'
+    state: directory
+    mode: '0755'
+
 - name: Render custom page
   ansible.builtin.template:
     src: index.html.j2
     dest: '{{ docker_content_dir }}/index.html'
     mode: '0644'
+
+- name: Manage basic auth credentials
+  community.general.htpasswd:
+    path: '{{ docker_creds_dir }}/htpasswd'
+    name: '{{ docker_basic_auth_user }}'
+    password: '{{ docker_basic_auth_password }}'
+    owner: root
+    group: root
+    mode: '0644'
+    state: present
+
+- name: Render nginx site config
+  ansible.builtin.template:
+    src: default.conf.j2
+    dest: '{{ docker_conf_dir }}/default.conf'
+    mode: '0644'
+  notify: Reload nginx
 
 - name: Render docker-compose file
   ansible.builtin.template:
