@@ -1,0 +1,34 @@
+---
+keepalived_packages:
+  - build-essential
+  - pkg-config
+  - curl
+  - gcc
+  - autoconf
+  - automake
+  - libssl-dev
+  - libnl-3-dev
+  - libnl-genl-3-dev
+  - libsnmp-dev
+  - libnl-route-3-dev
+  - libnfnetlink-dev
+  - libxtables-dev
+  - libip4tc-dev
+  - libip6tc-dev
+  - libipset-dev
+  - libmagic-dev
+  - libglib2.0-dev
+  - libpcre2-dev
+  - libnftnl-dev
+  - libmnl-dev
+  - libsystemd-dev
+  - libkmod-dev
+
+keepalived_conf_dir: /etc/keepalived
+keepalived_interface: enp0s3
+keepalived_vip: 192.168.56.100/24
+keepalived_virtual_router_id: 51
+keepalived_advert_int: 1
+keepalived_nopreempt: true
+keepalived_garp_master_delay: 5
+keepalived_router_id: '{{ inventory_hostname }}'

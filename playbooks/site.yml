@@ -5,3 +5,10 @@
   become: true
   roles:
     - docker
+
+- name: Install and deploy keepalived
+  hosts: all
+  tags: [keepalived]
+  become: true
+  roles:
+    - keepalived

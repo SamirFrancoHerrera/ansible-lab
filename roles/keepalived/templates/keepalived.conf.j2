@@ -1,0 +1,33 @@
+global_defs {
+  router_id {{ keepalived_router_id | default(inventory_hostname) }}
+  script_user root
+  enable_script_security
+}
+
+vrrp_instance VI_1 {
+  interface {{ keepalived_interface | default('enp0s3') }}
+  state {{ keepalived_state | default('BACKUP') }}
+  virtual_router_id {{ keepalived_virtual_router_id | default(51) }}
+  priority {{ keepalived_priority | default(100) }}
+  advert_int {{ keepalived_advert_int | default(1) }}
+{% if keepalived_state | default('BACKUP') != 'MASTER' %}
+  nopreempt {{ 'true' if (keepalived_nopreempt | default(true)) else 'false' }}
+{% endif %}
+  garp_master_delay {{ keepalived_garp_master_delay | default(5) }}
+
+  authentication {
+    auth_type PASS
+    auth_pass {{ keepalived_auth_pass | default('changeme') }}
+  }
+
+  unicast_src_ip {{ keepalived_unicast_src_ip | default(ansible_host) }}
+  unicast_peer {
+{% for peer in keepalived_unicast_peers | default([]) %}
+    {{ peer }}
+{% endfor %}
+  }
+
+  virtual_ipaddress {
+    {{ keepalived_vip | default('192.168.56.100/24') }} dev {{ keepalived_interface | default('enp0s3') }}
+  }
+}

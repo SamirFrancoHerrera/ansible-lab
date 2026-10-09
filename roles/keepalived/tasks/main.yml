@@ -1,0 +1,33 @@
+---
+- name: Install keepalived pre-requisites
+  ansible.builtin.apt:
+    name: '{{ keepalived_packages }}'
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Install keepalived
+  ansible.builtin.apt:
+    name: keepalived
+    state: present
+
+- name: Create keepalived config directory
+  ansible.builtin.file:
+    path: '{{ keepalived_conf_dir }}'
+    state: directory
+    mode: '0755'
+
+- name: Render keepalived config
+  ansible.builtin.template:
+    src: keepalived.conf.j2
+    dest: '{{ keepalived_conf_dir }}/keepalived.conf'
+    mode: '0644'
+    owner: root
+    group: root
+  notify: Reload keepalived
+
+- name: Enable and start keepalived service
+  ansible.builtin.service:
+    name: keepalived
+    state: started
+    enabled: true

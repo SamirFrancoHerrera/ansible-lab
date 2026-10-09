@@ -1,0 +1,12 @@
+---
+galaxy_info:
+  role_name: keepalived
+  author: SamirFrancoHerrera
+  description: Configura keepalived en modo activo-pasivo con VIP y unicast
+  license: MIT
+  min_ansible_version: '2.21'
+  platforms:
+    - name: Ubuntu
+      versions:
+        - resolute
+dependencies: []

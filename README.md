@@ -283,6 +283,6 @@ y el último en cargarse ganaría.
 |---|---|---|
 | 0 | Estructura, inventario, lint, variables | Completada |
 | 1 | Docker Engine + nginx con página custom en Jinja2 | Completada |
-| 2 | Ansible Vault para secretos | Pendiente |
-| 3 | Active-passive con nginx + keepalived | Pendiente |
+| 2 | Ansible Vault + Basic Auth (htpasswd + handler reload) | Completada |
+| 3 | Active-passive con keepalived (VIP 192.168.56.100, unicast, auth PASS) | Completada |
 | 4 | Clúster k3s (server + agent) | Pendiente |

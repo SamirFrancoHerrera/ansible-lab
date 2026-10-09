@@ -1,0 +1,6 @@
+---
+keepalived_state: MASTER
+keepalived_priority: 150
+keepalived_unicast_src_ip: 192.168.56.3
+keepalived_unicast_peers:
+  - 192.168.56.4
