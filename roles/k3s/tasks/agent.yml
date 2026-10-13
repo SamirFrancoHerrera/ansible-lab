@@ -1,0 +1,18 @@
+---
+- name: Check if k3s-agent is already installed/running
+  ansible.builtin.service_facts:
+
+- name: Install k3s agent
+  when:
+    - ansible_facts.services['k3s-agent.service'] is not defined or ansible_facts.services['k3s-agent.service'].state != 'running'
+    - hostvars['node1']['k3s_node_token'] is defined
+  ansible.builtin.shell: |
+    set -o pipefail
+    curl -sfL https://get.k3s.io | \
+      K3S_URL={{ k3s_server_url }} \
+      K3S_TOKEN={{ hostvars['node1']['k3s_node_token'] }} \
+      INSTALL_K3S_VERSION={{ k3s_version }} \
+      sh -s - agent
+  args:
+    creates: /usr/local/bin/k3s
+    executable: /bin/bash

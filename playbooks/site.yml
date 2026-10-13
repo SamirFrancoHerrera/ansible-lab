@@ -12,3 +12,10 @@
   become: true
   roles:
     - keepalived
+
+- name: Install and deploy k3s (server + agent)
+  hosts: lab
+  tags: [k3s]
+  become: true
+  roles:
+    - k3s

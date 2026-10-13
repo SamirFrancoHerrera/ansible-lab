@@ -1,0 +1,34 @@
+---
+- name: Check if k3s server is already installed/running
+  ansible.builtin.service_facts:
+
+- name: Install k3s server
+  when: ansible_facts.services['k3s.service'] is not defined or ansible_facts.services['k3s.service'].state != 'running'
+  ansible.builtin.shell: |
+    set -o pipefail
+    curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION={{ k3s_version }} sh -s - server --write-kubeconfig-mode 644
+  args:
+    creates: /usr/local/bin/k3s
+    executable: /bin/bash
+
+- name: Ensure k3s service is enabled and started
+  ansible.builtin.service:
+    name: k3s
+    state: started
+    enabled: true
+
+- name: Wait for k3s apiserver
+  ansible.builtin.wait_for:
+    port: 6443
+    host: 127.0.0.1
+    delay: 5
+    timeout: 300
+
+- name: Read node token
+  ansible.builtin.slurp:
+    src: '{{ k3s_node_token_file }}'
+  register: k3s_node_token_raw
+
+- name: Set k3s_node_token fact for agents
+  ansible.builtin.set_fact:
+    k3s_node_token: '{{ k3s_node_token_raw.content | b64decode | trim }}'

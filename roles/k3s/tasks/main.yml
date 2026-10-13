@@ -1,0 +1,8 @@
+---
+- name: Include server tasks on node1
+  ansible.builtin.include_tasks: server.yml
+  when: inventory_hostname == 'node1'
+
+- name: Include agent tasks on node2
+  ansible.builtin.include_tasks: agent.yml
+  when: inventory_hostname == 'node2'

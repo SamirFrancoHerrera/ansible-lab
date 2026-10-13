@@ -1,0 +1,12 @@
+---
+- name: Restart k3s
+  ansible.builtin.service:
+    name: k3s
+    state: restarted
+  when: inventory_hostname == 'node1'
+
+- name: Restart k3s-agent
+  ansible.builtin.service:
+    name: k3s-agent
+    state: restarted
+  when: inventory_hostname == 'node2'

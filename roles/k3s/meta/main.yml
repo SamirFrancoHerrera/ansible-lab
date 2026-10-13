@@ -1,0 +1,12 @@
+---
+galaxy_info:
+  role_name: k3s
+  author: SamirFrancoHerrera
+  description: Despliega clúster k3s (server en node1 + agent en node2)
+  license: MIT
+  min_ansible_version: '2.21'
+  platforms:
+    - name: Ubuntu
+      versions:
+        - resolute
+dependencies: []
